@@ -13,7 +13,7 @@ namespace Sirius
         private Exception Abort(string format, params object[] args)
         {
             return new Exception(
-                string.Format("pc={0:x16}: ", pc) +
+                string.Format("pc={0:x16}: ", pc - 4) +
                 string.Format(format, args));
         }
 
@@ -65,6 +65,30 @@ namespace Sirius
                                 if (ra != 31) reg[ra] = pc;
                                 pc = addr;
                                 return;
+                            case Op.Blbc:
+                                if (((ushort)reg[ra]) == 0) pc = addr;
+                                return;
+                            case Op.Beq:
+                                if (reg[ra] == 0) pc = addr;
+                                return;
+                            case Op.Blt:
+                                if (((long)reg[ra]) < 0) pc = addr;
+                                return;
+                            case Op.Ble:
+                                if (((long)reg[ra]) <= 0) pc = addr;
+                                return;
+                            case Op.Blbs:
+                                if (((ushort)reg[ra]) != 0) pc = addr;
+                                return;
+                            case Op.Bne:
+                                if (reg[ra] != 0) pc = addr;
+                                return;
+                            case Op.Bge:
+                                if (((long)reg[ra]) >= 0) pc = addr;
+                                return;
+                            case Op.Bgt:
+                                if (((long)reg[ra]) > 0) pc = addr;
+                                return;
                         }
                         break;
                     }
@@ -83,6 +107,7 @@ namespace Sirius
                                         reg[ra] = disp; // mov
                                     else
                                         reg[ra] = reg[rb] + disp;
+                                    //output.AppendFormat("[{0}:{1:x8}]", regname[ra], reg[ra]);
                                 }
                                 return;
                             case Op.Ldah:
@@ -92,10 +117,12 @@ namespace Sirius
                                         reg[ra] = disp << 16; // movh
                                     else
                                         reg[ra] = reg[rb] + (disp << 16);
+                                    //output.AppendFormat("[{0}:{1:x8}]", regname[ra], reg[ra]);
                                 }
                                 return;
                             case Op.Ldq:
                                 if (ra != 31) reg[ra] = Read64(reg[rb] + disp);
+                                //output.AppendFormat("[{0}:{1:x8}]", regname[ra], reg[ra]);
                                 return;
                             case Op.Ldq_u:
                                 if (ra == 31 && disp == 0)
@@ -104,6 +131,7 @@ namespace Sirius
                                 }
                                 else if (ra != 31)
                                     reg[ra] = Read64(reg[rb] + disp);
+                                //output.AppendFormat("[{0}:{1:x8}]", regname[ra], reg[ra]);
                                 return;
                             case Op.Ldl:
                                 if (ra != 31) reg[ra] = Read32(reg[rb] + disp);
@@ -179,6 +207,12 @@ namespace Sirius
                                     reg[rc] = lit | reg[rb];
                                 else
                                     reg[rc] = reg[ra] | reg[rb];
+                                return;
+                            case Op.Sextb:
+                                reg[rc] = (ulong)(long)(sbyte)(byte)reg[rb];
+                                return;
+                            case Op.Sextw:
+                                reg[rc] = (ulong)(long)(short)(ushort)reg[rb];
                                 return;
                         }
                         break;

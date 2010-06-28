@@ -101,10 +101,12 @@
     <Content Include="Test\3" />
     <Content Include="Test\3.c" />
     <Content Include="Test\4.c" />
+    <Content Include="Test\5.c" />
     <None Include="Properties\AppManifest.xml" />
     <Content Include="Test\1" />
     <Content Include="Test\2" />
     <Content Include="Test\4" />
+    <Content Include="Test\5" />
     <None Include="Test\Makefile" />
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -13,7 +14,11 @@ namespace Sirius
         public uint e_flags;
         public ushort e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx;
 
-        public Shdr64 Text { get; set; }
+        private List<Shdr64> shdrs = new List<Shdr64>();
+        public Shdr64[] Headers { get { return shdrs.ToArray(); } }
+        public Shdr64 Text { get; private set; }
+        public ulong Start { get; private set; }
+        public ulong End { get; private set; }
 
         public void Read(StringBuilder sb, BinaryReader br)
         {
@@ -158,6 +163,14 @@ namespace Sirius
                     var sh = new Shdr64();
                     sh.Read(sb, br, stroff);
                     if (sh.Name == ".text") Text = sh;
+                    if (sh == Text || sh.sh_addr > 0)
+                    {
+                        shdrs.Add(sh);
+                        var start = sh.sh_addr;
+                        var end = start + sh.sh_size;
+                        if (Start == 0 || Start > start) Start = start;
+                        if (End == 0 || End < end) End = end;
+                    }
                 }
             }
         }

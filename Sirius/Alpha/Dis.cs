@@ -7,29 +7,26 @@ namespace Sirius
     public partial class Alpha
     {
         private ELF64 elf;
-        private byte[] text_buf;
         private uint[] text_code;
         private Op[] text_op;
 
         public Alpha(ELF64 elf, byte[] data)
         {
             this.elf = elf;
-            var text = elf.Text;
-            text_buf = new byte[text.sh_size];
-            Array.Copy(data, (int)text.sh_offset, text_buf, 0, text_buf.Length);
-            text_code = new uint[text_buf.Length >> 2];
+            InitMemory(data);
+            text_code = new uint[elf.Text.sh_size >> 2];
             text_op = new Op[text_code.Length];
         }
 
         public void Disassemble(StringBuilder sb)
         {
             var text = elf.Text;
-            ulong addr = text.sh_addr, off = text.sh_offset;
-            for (int i = 0, p = 0; i < text_buf.Length; i += 4, p++, addr += 4, off += 4)
+            ulong addr = text.sh_addr, end = addr + text.sh_size, off = text.sh_offset;
+            for (int p = 0; addr < end; p++, addr += 4, off += 4)
             {
                 sb.AppendFormat("{0:x8}: ", off);
                 if (off != addr) sb.AppendFormat("[{0:x8}] ", addr);
-                text_op[p] = Disassemble(sb, addr, text_code[p] = BitConverter.ToUInt32(text_buf, i));
+                text_op[p] = Disassemble(sb, addr, text_code[p] = Read32(addr));
                 sb.AppendLine();
             }
         }
@@ -229,7 +226,7 @@ namespace Sirius
                         else
                         {
                             arg2 = string.Format("{0:x2}", (code >> 13) & 0xff);
-                            sb.AppendFormat(" r{0:00} {1} r{2:00}  ", ra, arg2, rc);
+                            sb.AppendFormat(" r{0:00}  {1} r{2:00} ", ra, arg2, rc);
                         }
                         sb.AppendFormat(" => {0,-7} {1},{2},{3}",
                             mne, regname[ra], arg2, regname[rc]);
