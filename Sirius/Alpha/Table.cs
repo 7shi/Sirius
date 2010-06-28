@@ -8,7 +8,7 @@ namespace Sirius
     {
         public enum Format
         {
-            ___, Pcd, Bra, Mem, Mbr, Mfc, Opr, F_P
+            ___, Pcd, Bra, Mem, Mfc, Mbr, Opr, F_P
         }
 
         public enum Regs
@@ -54,7 +54,7 @@ namespace Sirius
             /* 28-2b */ Format.Mem, Format.Mem, Format.Mem, Format.Mem,
             /* 2c-2f */ Format.Mem, Format.Mem, Format.Mem, Format.Mem,
             /* 30-33 */ Format.Bra, Format.Bra, Format.Bra, Format.Bra,
-            /* 34-37 */ Format.Mbr, Format.Bra, Format.Bra, Format.Bra,
+            /* 34-37 */ Format.Bra, Format.Bra, Format.Bra, Format.Bra,
             /* 38-3b */ Format.Bra, Format.Bra, Format.Bra, Format.Bra,
             /* 3c-3f */ Format.Bra, Format.Bra, Format.Bra, Format.Bra,
         };

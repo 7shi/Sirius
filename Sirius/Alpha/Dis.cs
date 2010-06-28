@@ -133,9 +133,8 @@ namespace Sirius
             var op = Disassemble(code);
             int opc = (int)(code >> 26);
             var mne = GetMnemonic(op);
-            var type = formats[opc];
             sb.AppendFormat("{0:x8} => {1:x2}", code, opc);
-            switch (type)
+            switch (formats[opc])
             {
                 default:
                     sb.AppendFormat("                   => {0}", mne);
@@ -160,28 +159,14 @@ namespace Sirius
                         break;
                     }
                 case Format.Mem:
-                case Format.Mbr:
                     {
                         int ra = (int)((code >> 21) & 31);
                         int rb = (int)((code >> 16) & 31);
-                        int disp;
-                        string args;
-                        if (type == Format.Mem)
-                        {
-                            disp = (int)(code & 0xffff);
-                            sb.Append("     ");
-                            args = disp < 0x8000
-                                ? string.Format("{0:x}({1})", disp, regname[rb])
-                                : string.Format("-{0:x}({1})", 0x10000 - disp, regname[rb]);
-                        }
-                        else
-                        {
-                            disp = (int)((code & 0x3fff) << 2);
-                            sb.AppendFormat(".{0:x}   ", (code >> 14) & 3);
-                            args = disp < 0x2000
-                                ? string.Format("{0:x}({1})", disp, regname[rb])
-                                : string.Format("-{0:x}({1})", 0x4000 - disp, regname[rb]);
-                        }
+                        int disp = (int)(code & 0xffff);
+                        var args = disp < 0x8000
+                            ? string.Format("{0:x}({1})", disp, regname[rb])
+                            : string.Format("-{0:x}({1})", 0x10000 - disp, regname[rb]);
+                        sb.AppendFormat("     ", (code >> 14) & 3);
                         sb.AppendFormat(" r{0:00} r{1:00} {2:x4}", ra, rb, disp);
                         sb.AppendFormat(" => {0,-7} {1},", mne, regname[ra]);
                         sb.Append(args);
@@ -215,6 +200,17 @@ namespace Sirius
                         int rb = (int)((code >> 16) & 31);
                         sb.AppendFormat(".{0:x4} r{1:00} r{2:00}      => {3,-7} {4},{5}",
                             code & 0xffff, ra, rb, mne, regname[ra], regname[rb]);
+                        break;
+                    }
+                case Format.Mbr:
+                    {
+                        int ra = (int)((code >> 21) & 31);
+                        int rb = (int)((code >> 16) & 31);
+                        int disp = (int)(code & 0x3fff);
+                        sb.AppendFormat(".{0:x}   ", (code >> 14) & 3);
+                        sb.AppendFormat(" r{0:00} r{1:00} {2:x4}", ra, rb, disp);
+                        sb.AppendFormat(" => {0,-7} {1},({2}),{3:x4}",
+                            mne, regname[ra], regname[rb], disp);
                         break;
                     }
                 case Format.Opr:

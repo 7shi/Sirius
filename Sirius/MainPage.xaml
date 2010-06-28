@@ -24,6 +24,8 @@
                 <Grid Width="4" />
                 <Button Content="Test1" Name="btnTest1" Click="btnTest_Click" />
                 <Button Content="Test2" Name="btnTest2" Click="btnTest_Click" />
+                <Button Content="Test3" Name="btnTest3" Click="btnTest_Click" />
+                <Button Content="Test4" Name="btnTest4" Click="btnTest_Click" />
             </StackPanel>
             <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
                 Sirius - Alpha Canis Majoris

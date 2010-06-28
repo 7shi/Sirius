@@ -6,8 +6,6 @@ namespace Sirius
 {
     public partial class Alpha
     {
-        private const ulong execEnd = stackEnd + 4;
-
         private ulong[] reg = new ulong[32];
         private ulong pc;
         private StringBuilder output;
@@ -29,13 +27,13 @@ namespace Sirius
 
             var text = elf.Text;
             ulong start = text.sh_addr, end = start + text.sh_size;
-            pc = elf.e_entry;
+            pc = reg[(int)Regs.T12] = elf.e_entry; // t12 for gp
 
             output.AppendFormat("pc={0:x16}: 開始", pc);
             output.AppendLine();
             for (; ; )
             {
-                if (pc == execEnd) break;
+                if (pc == stackEnd) break;
                 if (pc < start || pc >= end)
                     throw Abort("不正な実行アドレス");
                 ExecStep((int)((pc - start) >> 2));
@@ -48,27 +46,34 @@ namespace Sirius
 
         private void ExecStep(int p)
         {
+            pc += 4;
             var code = text_code[p];
             var op = text_op[p];
-            var type = formats[((int)op) >> 16];
-            switch (type)
+            switch (formats[((int)op) >> 16])
             {
-                case Format.Mem:
-                case Format.Mbr:
+                case Format.Bra:
                     {
-                        var ra = (int)((code >> 21) & 31);
-                        var rb = (int)((code >> 16) & 31);
-                        ulong disp;
-                        if (type == Format.Mem)
+                        int ra = (int)((code >> 21) & 31);
+                        uint disp = code & 0x001fffff;
+                        ulong addr = disp < 0x00100000
+                            ? pc + disp * 4
+                            : pc - (0x00200000 - disp) * 4;
+                        switch (op)
                         {
-                            disp = code & 0xffff;
-                            if (disp >= 0x8000) disp = disp - 0x10000;
+                            case Op.Br:
+                            case Op.Bsr:
+                                if (ra != 31) reg[ra] = pc;
+                                pc = addr;
+                                return;
                         }
-                        else
-                        {
-                            disp = (code & 0x3fff) << 2;
-                            if (disp >= 0x2000) disp = disp - 0x4000;
-                        }
+                        break;
+                    }
+                case Format.Mem:
+                    {
+                        int ra = (int)((code >> 21) & 31);
+                        int rb = (int)((code >> 16) & 31);
+                        ulong disp = code & 0xffff;
+                        if (disp >= 0x8000) disp = disp - 0x10000;
                         switch (op)
                         {
                             case Op.Lda:
@@ -79,7 +84,6 @@ namespace Sirius
                                     else
                                         reg[ra] = reg[rb] + disp;
                                 }
-                                pc += 4;
                                 return;
                             case Op.Ldah:
                                 if (ra != 31)
@@ -89,11 +93,9 @@ namespace Sirius
                                     else
                                         reg[ra] = reg[rb] + (disp << 16);
                                 }
-                                pc += 4;
                                 return;
                             case Op.Ldq:
                                 if (ra != 31) reg[ra] = Read64(reg[rb] + disp);
-                                pc += 4;
                                 return;
                             case Op.Ldq_u:
                                 if (ra == 31 && disp == 0)
@@ -102,42 +104,44 @@ namespace Sirius
                                 }
                                 else if (ra != 31)
                                     reg[ra] = Read64(reg[rb] + disp);
-                                pc += 4;
                                 return;
                             case Op.Ldl:
                                 if (ra != 31) reg[ra] = Read32(reg[rb] + disp);
-                                pc += 4;
                                 return;
                             case Op.Ldwu:
                                 if (ra != 31) reg[ra] = Read16(reg[rb] + disp);
-                                pc += 4;
                                 return;
                             case Op.Ldbu:
                                 if (ra != 31) reg[ra] = Read8(reg[rb] + disp);
-                                pc += 4;
                                 return;
                             case Op.Stq:
                                 Write64(reg[rb] + disp, reg[ra]);
-                                pc += 4;
                                 return;
                             case Op.Stl:
                                 Write32(reg[rb] + disp, (uint)reg[ra]);
-                                pc += 4;
                                 return;
                             case Op.Stw:
                                 Write16(reg[rb] + disp, (ushort)reg[ra]);
-                                pc += 4;
                                 return;
                             case Op.Stb:
                                 Write8(reg[rb] + disp, (byte)reg[ra]);
-                                pc += 4;
                                 return;
+                        }
+                        break;
+                    }
+                case Format.Mbr:
+                    {
+                        int ra = (int)((code >> 21) & 31);
+                        int rb = (int)((code >> 16) & 31);
+                        int disp = (int)(code & 0x3fff);
+                        switch (op)
+                        {
                             case Op.Jmp:
                             case Op.Jsr:
                             case Op.Ret:
                             case Op.Jsr_coroutine:
                                 {
-                                    ulong va = reg[rb] + disp;
+                                    ulong va = reg[rb];
                                     if (ra != 31) reg[ra] = pc;
                                     pc = va;
                                     return;
@@ -175,7 +179,6 @@ namespace Sirius
                                     reg[rc] = lit | reg[rb];
                                 else
                                     reg[rc] = reg[ra] | reg[rb];
-                                pc += 4;
                                 return;
                         }
                         break;
