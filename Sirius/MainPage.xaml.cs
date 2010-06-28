@@ -27,10 +27,10 @@ namespace Sirius
                 textBox1.Focus();
             };
 
-            InitBox(cap1b, cap1f, textBox1);
-            InitBox(cap2b, cap2f, textBox2);
-            InitBox(cap3b, cap3f, textBox3);
-            InitBox(cap4b, cap4f, textBox4);
+            new WheelObserver(textBox1);
+            new WheelObserver(textBox2);
+            new WheelObserver(textBox3);
+            new WheelObserver(textBox4);
         }
 
         public void Write(string format, params object[] args)
@@ -38,26 +38,25 @@ namespace Sirius
             textBox1.Text += string.Format(format, args);
         }
 
-        private void button1_Click(object sender, RoutedEventArgs e)
-        {
-            var ofd = new OpenFileDialog();
-            if (ofd.ShowDialog() != true) return;
+        private byte[] data;
 
+        private void ReadElf(Stream s)
+        {
             var sb1 = new StringBuilder();
             var sb2 = new StringBuilder();
-            var sb3 = new StringBuilder();
-            var sb4 = new StringBuilder();
             var sbx = sb1;
             try
             {
-                using (var fs = ofd.File.OpenRead())
-                using (var br = new BinaryReader(fs))
-                {
-                    var elf = new ELF64();
+                data = new byte[s.Length];
+                s.Read(data, 0, data.Length);
+                btnSave.IsEnabled = true;
+
+                var elf = new ELF64();
+                using (var ms = new MemoryStream(data))
+                using (var br = new BinaryReader(ms))
                     elf.Read(sb1, br);
-                    sbx = sb2;
-                    elf.Disassemble(sb2, br);
-                }
+                sbx = sb2;
+                elf.Disassemble(sb2);
             }
             catch (Exception ex)
             {
@@ -66,29 +65,63 @@ namespace Sirius
             }
             textBox1.Text = sb1.ToString();
             textBox2.Text = sb2.ToString();
-            textBox3.Text = sb3.ToString();
-            textBox4.Text = sb4.ToString();
         }
 
-        private void InitBox(Grid bg, TextBlock fg, TextBox tb)
+        private void btnOpen_Click(object sender, RoutedEventArgs e)
         {
-            InactivateCaption(bg, fg);
-            tb.GotFocus += (sender, e) => ActivateCaption(bg, fg);
-            tb.LostFocus += (sender, e) => InactivateCaption(bg, fg);
-            bg.MouseLeftButtonDown += (sender, e) => tb.Focus();
-            new WheelObserver(tb);
+            var ofd = new OpenFileDialog();
+            if (ofd.ShowDialog() != true) return;
+
+            textBox1.Text = textBox2.Text = textBox3.Text = textBox4.Text = "";
+            try
+            {
+                var fi = ofd.File;
+                if (fi.Length > 200 * 1024)
+                    throw new Exception("ファイルが大き過ぎます。上限は200KBです。");
+                using (var fs = ofd.File.OpenRead())
+                    ReadElf(fs);
+            }
+            catch (Exception ex)
+            {
+                textBox1.Text = ex.Message + Environment.NewLine +
+                    "読み込みに失敗しました。" + Environment.NewLine;
+            }
         }
 
-        private void ActivateCaption(Grid grid, TextBlock text)
+        private void btnSave_Click(object sender, RoutedEventArgs e)
         {
-            grid.Background = new SolidColorBrush(SystemColors.ActiveCaptionColor);
-            text.Foreground = new SolidColorBrush(SystemColors.ActiveCaptionTextColor);
+            var sfd = new SaveFileDialog();
+            if (sfd.ShowDialog() != true) return;
+
+            using (var fs = sfd.OpenFile())
+                fs.Write(data, 0, data.Length);
         }
 
-        private void InactivateCaption(Grid grid, TextBlock text)
+        private void ReadTest(int t)
         {
-            grid.Background = new SolidColorBrush(SystemColors.InactiveCaptionColor);
-            text.Foreground = new SolidColorBrush(SystemColors.InactiveCaptionTextColor);
+            var tb = textBox1;
+            textBox1.Text = textBox2.Text = textBox3.Text = textBox4.Text = "";
+            try
+            {
+                var uri1 = new Uri("Test/" + t, UriKind.Relative);
+                using (var s = Application.GetResourceStream(uri1).Stream)
+                    ReadElf(s);
+                tb = textBox3;
+                var uri2 = new Uri("Test/" + t + ".c", UriKind.Relative);
+                using (var s = Application.GetResourceStream(uri2).Stream)
+                using (var sr = new StreamReader(s))
+                    textBox3.Text = sr.ReadToEnd();
+            }
+            catch (Exception ex)
+            {
+                tb.Text = ex.Message + Environment.NewLine +
+                    "読み込みに失敗しました。" + Environment.NewLine;
+            }
+        }
+
+        private void btnTest1_Click(object sender, RoutedEventArgs e)
+        {
+            ReadTest(1);
         }
     }
 }

@@ -14,6 +14,7 @@ namespace Sirius
         public ushort e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx;
 
         public Shdr64 Text { get; set; }
+        public byte[] textbuf;
 
         public void Read(StringBuilder sb, BinaryReader br)
         {
@@ -157,26 +158,31 @@ namespace Sirius
                     sb.AppendLine();
                     var sh = new Shdr64();
                     sh.Read(sb, br, stroff);
-                    if (sh.Name == ".text") Text = sh;
+                    if (sh.Name == ".text")
+                    {
+                        Text = sh;
+                        var pos = br.BaseStream.Position;
+                        br.BaseStream.Position = (long)sh.sh_offset;
+                        textbuf = br.ReadBytes((int)sh.sh_size);
+                        br.BaseStream.Position = pos;
+                    }
                 }
             }
         }
 
-        public void Disassemble(StringBuilder sb, BinaryReader br)
+        public void Disassemble(StringBuilder sb)
         {
             if (Text == null) return;
 
             switch (e_machine)
             {
                 case EM_ALPHA_EXP:
-                    if (Text.sh_size > 200 * 1024)
-                        throw new Exception("ファイルが大き過ぎます。上限は200KBです。");
-                    br.BaseStream.Position = (long)Text.sh_offset;
-                    ulong addr = Text.sh_addr;
-                    for (int i = 0; i < (int)Text.sh_size; i += 4, addr += 4)
+                    ulong addr = Text.sh_addr, off = Text.sh_offset;
+                    for (int i = 0; i < (int)Text.sh_size; i += 4, addr += 4, off += 4)
                     {
-                        sb.AppendFormat("{0:x8}: [{1:x8}] ", br.BaseStream.Position, addr);
-                        Alpha.Disassemble(sb, addr, br.ReadUInt32());
+                        sb.AppendFormat("{0:x8}: ", off);
+                        if (off != addr) sb.AppendFormat("[{0:x8}] ", addr);
+                        Alpha.Disassemble(sb, addr, BitConverter.ToUInt32(textbuf, i));
                         sb.AppendLine();
                     }
                     break;
