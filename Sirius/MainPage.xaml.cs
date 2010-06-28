@@ -44,7 +44,9 @@ namespace Sirius
         {
             var sb1 = new StringBuilder();
             var sb2 = new StringBuilder();
+            var sb4 = new StringBuilder();
             var sbx = sb1;
+            var msg = "読み込みに失敗しました。";
             try
             {
                 data = new byte[s.Length];
@@ -54,17 +56,27 @@ namespace Sirius
                 var elf = new ELF64();
                 using (var ms = new MemoryStream(data))
                 using (var br = new BinaryReader(ms))
-                    elf.Read(sb1, br);
+                    elf.Read(sbx, br);
+
                 sbx = sb2;
-                elf.Disassemble(sb2);
+                msg = "逆アセンブルに失敗しました。";
+                if (elf.e_machine != ELF.EM_ALPHA_EXP)
+                    throw new Exception("Alpha以外はサポートされていません。");
+                var alpha = new Alpha(elf, data);
+                alpha.Disassemble(sbx);
+
+                sbx = sb4;
+                msg = "実行に失敗しました。";
+                alpha.Exec(sbx);
             }
             catch (Exception ex)
             {
                 sbx.AppendLine(ex.Message);
-                sbx.AppendLine("読み込みに失敗しました。");
+                sbx.AppendLine(msg);
             }
             textBox1.Text = sb1.ToString();
             textBox2.Text = sb2.ToString();
+            textBox4.Text = sb4.ToString();
         }
 
         private void btnOpen_Click(object sender, RoutedEventArgs e)

@@ -28,7 +28,7 @@
                 Sirius - Alpha Canis Majoris
             </TextBlock>
         </Grid>
-        <controls:TabControl Grid.Column="0" Grid.Row="1" Margin="0,0,6,6">
+        <controls:TabControl Grid.Column="0" Grid.Row="1" Grid.RowSpan="2" Margin="0,0,6,0">
             <controls:TabItem Header="ELF Headers">
                 <TextBox Name="textBox1" AcceptsReturn="True" FontFamily="Courier New" FontSize="12" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" />
             </controls:TabItem>
@@ -43,13 +43,13 @@
                 <TextBox Name="textBox3" AcceptsReturn="True" FontFamily="Courier New" FontSize="12" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" />
             </controls:TabItem>
         </controls:TabControl>
-        <controls:TabControl Grid.Column="0" Grid.Row="2" Grid.ColumnSpan="3">
+        <controls:TabControl Grid.Column="1" Grid.Row="2" Grid.ColumnSpan="2">
             <controls:TabItem Header="Output">
                 <TextBox Name="textBox4" AcceptsReturn="True" FontFamily="Courier New" FontSize="12" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Visible" />
             </controls:TabItem>
         </controls:TabControl>
-        <controls:GridSplitter Grid.Column="0" Grid.Row="1" Width="6" HorizontalAlignment="Right" VerticalAlignment="Stretch" />
+        <controls:GridSplitter Grid.Column="0" Grid.Row="1" Grid.RowSpan="2" Width="6" HorizontalAlignment="Right" VerticalAlignment="Stretch" />
         <controls:GridSplitter Grid.Column="1" Grid.Row="1" Width="6" HorizontalAlignment="Right" VerticalAlignment="Stretch" />
-        <controls:GridSplitter Grid.Column="0" Grid.Row="1" Grid.ColumnSpan="2" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" />
+        <controls:GridSplitter Grid.Column="1" Grid.Row="1" Grid.ColumnSpan="2" Height="6" HorizontalAlignment="Stretch" VerticalAlignment="Bottom" />
     </Grid>
 </UserControl>

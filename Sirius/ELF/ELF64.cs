@@ -14,7 +14,6 @@ namespace Sirius
         public ushort e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx;
 
         public Shdr64 Text { get; set; }
-        public byte[] textbuf;
 
         public void Read(StringBuilder sb, BinaryReader br)
         {
@@ -158,36 +157,8 @@ namespace Sirius
                     sb.AppendLine();
                     var sh = new Shdr64();
                     sh.Read(sb, br, stroff);
-                    if (sh.Name == ".text")
-                    {
-                        Text = sh;
-                        var pos = br.BaseStream.Position;
-                        br.BaseStream.Position = (long)sh.sh_offset;
-                        textbuf = br.ReadBytes((int)sh.sh_size);
-                        br.BaseStream.Position = pos;
-                    }
+                    if (sh.Name == ".text") Text = sh;
                 }
-            }
-        }
-
-        public void Disassemble(StringBuilder sb)
-        {
-            if (Text == null) return;
-
-            switch (e_machine)
-            {
-                case EM_ALPHA_EXP:
-                    ulong addr = Text.sh_addr, off = Text.sh_offset;
-                    for (int i = 0; i < (int)Text.sh_size; i += 4, addr += 4, off += 4)
-                    {
-                        sb.AppendFormat("{0:x8}: ", off);
-                        if (off != addr) sb.AppendFormat("[{0:x8}] ", addr);
-                        Alpha.Disassemble(sb, addr, BitConverter.ToUInt32(textbuf, i));
-                        sb.AppendLine();
-                    }
-                    break;
-                default:
-                    throw new Exception("Alpha以外はサポートされていません。");
             }
         }
     }

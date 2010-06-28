@@ -11,21 +11,33 @@ namespace Sirius
             ___, Pcd, Bra, Mem, Mbr, Mfc, Opr, F_P
         }
 
-        private static string[] regs =
+        public enum Regs
         {
-            /* r00     */ "v0",
-            /* r01-r08 */ "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7",
-            /* r09-r14 */ "s0", "s1", "s2", "s3", "s4", "s5",
-            /* r15     */ "fp",
-            /* r16-r21 */ "a0", "a1", "a2", "a3", "a4", "a5",
-            /* r22-r25 */ "t8", "t9", "t10", "t11",
-            /* r26     */ "ra",
-            /* r27     */ "t12",
-            /* r28     */ "at",
-            /* r29     */ "gp",
-            /* r30     */ "sp",
-            /* r31     */ "zero",
-        };
+            // r0
+            V0,
+            // r1-r8
+            T0, T1, T2, T3, T4, T5, T6, T7,
+            // r9-r14
+            S0, S1, S2, S3, S4, S5,
+            // r15
+            FP,
+            // r16-r21
+            A0, A1, A2, A3, A4, A5,
+            // r22-r25
+            T8, T9, T10, T11,
+            // r26
+            RA,
+            // r27
+            T12,
+            // r28
+            AT,
+            // r29
+            GP,
+            // r30
+            SP,
+            // r31
+            Zero,
+        }
 
         private static Format[] formats =
         {
@@ -47,11 +59,14 @@ namespace Sirius
             /* 3c-3f */ Format.Bra, Format.Bra, Format.Bra, Format.Bra,
         };
 
-
+        private static string[] regname = new string[32];
         private static Op[][] subops;
 
         static Alpha()
         {
+            for (int i = 0; i < regname.Length; i++)
+                regname[i] = ((Regs)i).ToString().ToLower();
+
             subops = new Op[0x40][];
 
             subops[0x10] = new Op[0x80];

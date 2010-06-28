@@ -70,7 +70,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Alpha\Dis.cs" />
+    <Compile Include="Alpha\Exec.cs" />
     <Compile Include="Alpha\Table.cs" />
+    <Compile Include="Alpha\Memory.cs" />
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>
@@ -97,6 +99,7 @@
   <ItemGroup>
     <None Include="Properties\AppManifest.xml" />
     <Content Include="Test\1" />
+    <None Include="Test\Makefile" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Test\1.c" />

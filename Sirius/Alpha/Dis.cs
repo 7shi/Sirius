@@ -6,6 +6,34 @@ namespace Sirius
 {
     public partial class Alpha
     {
+        private ELF64 elf;
+        private byte[] text_buf;
+        private uint[] text_code;
+        private Op[] text_op;
+
+        public Alpha(ELF64 elf, byte[] data)
+        {
+            this.elf = elf;
+            var text = elf.Text;
+            text_buf = new byte[text.sh_size];
+            Array.Copy(data, (int)text.sh_offset, text_buf, 0, text_buf.Length);
+            text_code = new uint[text_buf.Length >> 2];
+            text_op = new Op[text_code.Length];
+        }
+
+        public void Disassemble(StringBuilder sb)
+        {
+            var text = elf.Text;
+            ulong addr = text.sh_addr, off = text.sh_offset;
+            for (int i = 0, p = 0; i < text_buf.Length; i += 4, p++, addr += 4, off += 4)
+            {
+                sb.AppendFormat("{0:x8}: ", off);
+                if (off != addr) sb.AppendFormat("[{0:x8}] ", addr);
+                text_op[p] = Disassemble(sb, addr, text_code[p] = BitConverter.ToUInt32(text_buf, i));
+                sb.AppendLine();
+            }
+        }
+
         public static Op Disassemble(uint code)
         {
             int op = (int)(code >> 26);
@@ -30,13 +58,11 @@ namespace Sirius
                 case 0x10:
                 case 0x11:
                 case 0x12:
-                case 0x13:
-                    return subops[op][(code >> 5) & 0x7f];
+                case 0x13: return subops[op][(code >> 5) & 0x7f];
                 case 0x14:
                 case 0x15:
                 case 0x16:
-                case 0x17:
-                    return subops[op][(code >> 5) & 0x7ff];
+                case 0x17: return subops[op][(code >> 5) & 0x7ff];
                 case 0x18:
                     switch (code & 0xffff)
                     {
@@ -55,11 +81,9 @@ namespace Sirius
                     }
                     break;
                 case 0x19: return Op.Pal19;
-                case 0x1a:
-                    return subops[op][(code >> 14) & 3];
+                case 0x1a: return subops[op][(code >> 14) & 3];
                 case 0x1b: return Op.Pal1b;
-                case 0x1c:
-                    return subops[op][(code >> 5) & 0x7f];
+                case 0x1c: return subops[op][(code >> 5) & 0x7f];
                 case 0x1d: return Op.Pal1d;
                 case 0x1e: return Op.Pal1e;
                 case 0x1f: return Op.Pal1f;
@@ -99,18 +123,18 @@ namespace Sirius
             return Op.___;
         }
 
-        public static string GetMnemonic(Op aop)
+        public static string GetMnemonic(Op op)
         {
-            return aop.ToString().ToLower().Replace("__", "/");
+            return op.ToString().ToLower().Replace("__", "/");
         }
 
-        public static void Disassemble(StringBuilder sb, ulong addr, uint code)
+        public static Op Disassemble(StringBuilder sb, ulong addr, uint code)
         {
-            var aop = Disassemble(code);
-            int op = (int)(code >> 26);
-            var mne = GetMnemonic(aop);
-            var type = formats[op];
-            sb.AppendFormat("{0:x8} => {1:x2}", code, op);
+            var op = Disassemble(code);
+            int opc = (int)(code >> 26);
+            var mne = GetMnemonic(op);
+            var type = formats[opc];
+            sb.AppendFormat("{0:x8} => {1:x2}", code, opc);
             switch (type)
             {
                 default:
@@ -130,8 +154,8 @@ namespace Sirius
                             ? string.Format("{0:x8}", addr + disp * 4 + 4)
                             : string.Format("{0:x8}", addr - (0x00200000 - disp) * 4 + 4);
                         sb.AppendFormat("      r{0:00} {1:x8} => {2,-7} {3},{4}",
-                            ra, disp, mne, regs[ra], sdisp);
-                        if (ra == 31 && aop == Op.Br)
+                            ra, disp, mne, regname[ra], sdisp);
+                        if (ra == 31 && op == Op.Br)
                             sb.AppendFormat(" => br {0}", sdisp);
                         break;
                     }
@@ -147,32 +171,32 @@ namespace Sirius
                             disp = (int)(code & 0xffff);
                             sb.Append("     ");
                             args = disp < 0x8000
-                                ? string.Format("{0:x}({1})", disp, regs[rb])
-                                : string.Format("-{0:x}({1})", 0x10000 - disp, regs[rb]);
+                                ? string.Format("{0:x}({1})", disp, regname[rb])
+                                : string.Format("-{0:x}({1})", 0x10000 - disp, regname[rb]);
                         }
                         else
                         {
                             disp = (int)((code & 0x3fff) << 2);
                             sb.AppendFormat(".{0:x}   ", (code >> 14) & 3);
                             args = disp < 0x2000
-                                ? string.Format("{0:x}({1})", disp, regs[rb])
-                                : string.Format("-{0:x}({1})", 0x4000 - disp, regs[rb]);
+                                ? string.Format("{0:x}({1})", disp, regname[rb])
+                                : string.Format("-{0:x}({1})", 0x4000 - disp, regname[rb]);
                         }
                         sb.AppendFormat(" r{0:00} r{1:00} {2:x4}", ra, rb, disp);
-                        sb.AppendFormat(" => {0,-7} {1},", mne, regs[ra]);
+                        sb.AppendFormat(" => {0,-7} {1},", mne, regname[ra]);
                         sb.Append(args);
-                        if (rb == 31 && aop == Op.Lda)
-                            sb.AppendFormat(" => mov {0:x},{1}", disp, regs[ra]);
-                        else if (rb == 31 && aop == Op.Ldah)
-                            sb.AppendFormat(" => mov {0:x}0000,{1}", disp, regs[ra]);
+                        if (rb == 31 && op == Op.Lda)
+                            sb.AppendFormat(" => mov {0:x},{1}", disp, regname[ra]);
+                        else if (rb == 31 && op == Op.Ldah)
+                            sb.AppendFormat(" => mov {0:x}0000,{1}", disp, regname[ra]);
                         else if (ra == 31)
                         {
-                            if (disp == 0 && aop == Op.Ldq_u)
+                            if (disp == 0 && op == Op.Ldq_u)
                                 sb.Append(" => unop");
                             else
                             {
                                 var pse = "";
-                                switch (aop)
+                                switch (op)
                                 {
                                     case Op.Ldl: pse = "prefetch"; break;
                                     case Op.Ldq: pse = "prefetch_en"; break;
@@ -190,7 +214,7 @@ namespace Sirius
                         int ra = (int)((code >> 21) & 31);
                         int rb = (int)((code >> 16) & 31);
                         sb.AppendFormat(".{0:x4} r{1:00} r{2:00}      => {3,-7} {4},{5}",
-                            code & 0xffff, ra, rb, mne, regs[ra], regs[rb]);
+                            code & 0xffff, ra, rb, mne, regname[ra], regname[rb]);
                         break;
                     }
                 case Format.Opr:
@@ -204,7 +228,7 @@ namespace Sirius
                         {
                             rb = (int)((code >> 16) & 31);
                             sb.AppendFormat(" r{0:00} r{1:00} r{2:00} ", ra, rb, rc);
-                            arg2 = regs[rb];
+                            arg2 = regname[rb];
                         }
                         else
                         {
@@ -212,17 +236,17 @@ namespace Sirius
                             sb.AppendFormat(" r{0:00} {1} r{2:00}  ", ra, arg2, rc);
                         }
                         sb.AppendFormat(" => {0,-7} {1},{2},{3}",
-                            mne, regs[ra], arg2, regs[rc]);
+                            mne, regname[ra], arg2, regname[rc]);
                         if (ra == 31)
                         {
                             string pse = "";
-                            switch (aop)
+                            switch (op)
                             {
                                 case Op.Bis:
                                     if (rb == 31 && rc == 31)
                                         sb.Append(" => nop");
                                     else if (rb == 31)
-                                        sb.AppendFormat(" => clr {0}", regs[rc]);
+                                        sb.AppendFormat(" => clr {0}", regname[rc]);
                                     else
                                         pse = "mov";
                                     break;
@@ -234,7 +258,7 @@ namespace Sirius
                                 case Op.Subq__v: pse = "negq/v"; break;
                             }
                             if (pse != "")
-                                sb.AppendFormat(" => {0} {1},{2}", pse, arg2, regs[rc]);
+                                sb.AppendFormat(" => {0} {1},{2}", pse, arg2, regname[rc]);
                         }
                         break;
                     }
@@ -249,7 +273,7 @@ namespace Sirius
                         int pst = 2;
                         var pse = "";
                         if (fa == 31)
-                            switch (aop)
+                            switch (op)
                             {
                                 case Op.Cpys:
                                     if (fb == 31 && fc == 31)
@@ -277,13 +301,13 @@ namespace Sirius
                                 case Op.Subt__sui: pse = "negt/sui"; break;
                             };
                         if (pse == "" && fa == fb)
-                            switch (aop)
+                            switch (op)
                             {
                                 case Op.Cpys: pse = "fmov"; break;
                                 case Op.Cpysn: pse = "fneg"; break;
                             }
                         if (pse == "" && fa == fb && fb == fc)
-                            switch (aop)
+                            switch (op)
                             {
                                 case Op.Mf_fpcr:
                                 case Op.Mt_fpcr:
@@ -307,6 +331,7 @@ namespace Sirius
                         break;
                     }
             }
+            return op;
         }
     }
 }
