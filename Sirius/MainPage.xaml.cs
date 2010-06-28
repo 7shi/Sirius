@@ -131,9 +131,15 @@ namespace Sirius
             }
         }
 
-        private void btnTest1_Click(object sender, RoutedEventArgs e)
+        private void btnTest_Click(object sender, RoutedEventArgs e)
         {
-            ReadTest(1);
+            var button = sender as Button;
+            if (button == null) return;
+
+            var name = button.Name;
+            if (!name.StartsWith("btnTest")) return;
+
+            ReadTest(int.Parse(name.Substring(7)));
         }
     }
 }

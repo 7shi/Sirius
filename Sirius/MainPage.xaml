@@ -22,7 +22,8 @@
                 <Button Content="開く" Name="btnOpen" Click="btnOpen_Click" />
                 <Button Content="保存" Name="btnSave" Click="btnSave_Click" IsEnabled="False" />
                 <Grid Width="4" />
-                <Button Content="Test1" Name="btnTest1" Click="btnTest1_Click" />
+                <Button Content="Test1" Name="btnTest1" Click="btnTest_Click" />
+                <Button Content="Test2" Name="btnTest2" Click="btnTest_Click" />
             </StackPanel>
             <TextBlock HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,6,0">
                 Sirius - Alpha Canis Majoris
