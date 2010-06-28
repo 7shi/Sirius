@@ -6,8 +6,9 @@ namespace Sirius
 {
     public partial class Alpha
     {
-        private ulong[] reg = new ulong[32];
         private ulong pc;
+        private ulong[] reg = new ulong[32];
+        private double[] frg = new double[32];
         private StringBuilder output;
 
         private Exception Abort(string format, params object[] args)
@@ -23,6 +24,7 @@ namespace Sirius
 
             Array.Clear(stack, 0, stack.Length);
             Array.Clear(reg, 0, reg.Length);
+            Array.Clear(frg, 0, frg.Length);
             reg[(int)Regs.RA] = reg[(int)Regs.SP] = stackEnd;
 
             var text = elf.Text;
@@ -100,6 +102,9 @@ namespace Sirius
                         if (disp >= 0x8000) disp = disp - 0x10000;
                         switch (op)
                         {
+                            case Op.Stt:
+                                WriteDouble(reg[rb] + disp, frg[ra]);
+                                return;
                             case Op.Lda:
                                 if (ra != 31)
                                 {
@@ -134,13 +139,13 @@ namespace Sirius
                                 //output.AppendFormat("[{0}:{1:x8}]", regname[ra], reg[ra]);
                                 return;
                             case Op.Ldl:
-                                if (ra != 31) reg[ra] = Read32(reg[rb] + disp);
+                                if (ra != 31) reg[ra] = (ulong)(long)(int)Read32(reg[rb] + disp);
                                 return;
                             case Op.Ldwu:
-                                if (ra != 31) reg[ra] = Read16(reg[rb] + disp);
+                                if (ra != 31) reg[ra] = (ulong)(long)(short)Read16(reg[rb] + disp);
                                 return;
                             case Op.Ldbu:
-                                if (ra != 31) reg[ra] = Read8(reg[rb] + disp);
+                                if (ra != 31) reg[ra] = (ulong)(long)(sbyte)Read8(reg[rb] + disp);
                                 return;
                             case Op.Stq:
                                 Write64(reg[rb] + disp, reg[ra]);
@@ -190,29 +195,108 @@ namespace Sirius
                         switch (op)
                         {
                             case Op.Bis:
-                                if (ra == 31)
+                                if (rc != 31)
                                 {
-                                    if (rb == 31 && rc == 31)
+                                    if (ra == 31)
                                     {
-                                        // nop
+                                        if (rb == 31)
+                                            reg[rc] = 0; // clr
+                                        else if (rb == -1)
+                                            reg[rc] = lit; // mov
+                                        else
+                                            reg[rc] = reg[rb]; // mov
                                     }
-                                    else if (rb == 31)
-                                        reg[rc] = 0; // clr
-                                    else if (rb == -1)
-                                        reg[rc] = lit; // mov
                                     else
-                                        reg[rc] = reg[rb]; // mov
+                                        reg[rc] = reg[ra] | (rb == -1 ? lit : reg[rb]);
                                 }
-                                else if (rb == -1)
-                                    reg[rc] = lit | reg[rb];
-                                else
-                                    reg[rc] = reg[ra] | reg[rb];
+                                return;
+                            case Op.And:
+                                if (rc != 31) reg[rc] = reg[ra] & (rb == -1 ? lit : reg[rb]);
+                                return;
+                            case Op.Xor:
+                                if (rc != 31) reg[rc] = reg[ra] ^ (rb == -1 ? lit : reg[rb]);
                                 return;
                             case Op.Sextb:
-                                reg[rc] = (ulong)(long)(sbyte)(byte)reg[rb];
+                                if (rc != 31) reg[rc] = (ulong)(long)(sbyte)(byte)reg[rb];
                                 return;
                             case Op.Sextw:
-                                reg[rc] = (ulong)(long)(short)(ushort)reg[rb];
+                                if (rc != 31) reg[rc] = (ulong)(long)(short)(ushort)reg[rb];
+                                return;
+                            case Op.Addq:
+                                if (rc != 31) reg[rc] = reg[ra] + (rb == -1 ? lit : reg[rb]);
+                                return;
+                            case Op.Addl:
+                                if (rc != 31)
+                                {
+                                    if (ra == 31)
+                                    {
+                                        // sextl
+                                        if (rb == -1)
+                                            reg[rc] = lit;
+                                        else
+                                            reg[rc] = (ulong)(long)(int)(uint)reg[rb];
+                                    }
+                                    else if (rb == -1)
+                                        reg[rc] = (ulong)(((int)(uint)reg[ra]) + lit);
+                                    else
+                                        reg[rc] = (ulong)(((int)(uint)reg[ra]) + ((int)(uint)reg[rb]));
+                                }
+                                return;
+                            case Op.Subq:
+                                if (rc != 31) reg[rc] = reg[ra] - (rb == -1 ? lit : reg[rb]);
+                                return;
+                            case Op.Subl:
+                                if (rc != 31)
+                                {
+                                    if (ra == 31)
+                                    {
+                                        // negl
+                                        if (rb == -1)
+                                            reg[rc] = (ulong)(long)-lit;
+                                        else
+                                            reg[rc] = (ulong)(long)(0 - (int)(uint)reg[rb]);
+                                    }
+                                    else if (rb == -1)
+                                        reg[rc] = (ulong)(((int)(uint)reg[ra]) - lit);
+                                    else
+                                        reg[rc] = (ulong)(((int)(uint)reg[ra]) - ((int)(uint)reg[rb]));
+                                }
+                                return;
+                            case Op.S4addq:
+                                if (rc != 31) reg[rc] = (reg[ra] << 2) + (rb == -1 ? lit : reg[rb]);
+                                return;
+                            case Op.S8addq:
+                                if (rc != 31) reg[rc] = (reg[ra] << 3) + (rb == -1 ? lit : reg[rb]);
+                                return;
+                            case Op.Sll:
+                                if (rc != 31) reg[rc] = reg[ra] << (int)(rb == -1 ? lit : reg[rb]);
+                                return;
+                            case Op.Srl:
+                                if (rc != 31) reg[rc] = reg[ra] >> (int)(rb == -1 ? lit : reg[rb]);
+                                return;
+                            case Op.Sra:
+                                if (rc != 31)
+                                    reg[rc] = (ulong)(((long)reg[ra]) >> (int)(rb == -1 ? lit : reg[rb]));
+                                return;
+                            case Op.Cmpeq:
+                                if (rc != 31)
+                                    reg[rc] = reg[ra] == (rb == -1 ? lit : reg[rb]) ? 1LU : 0LU;
+                                return;
+                            case Op.Cmple:
+                                if (rc != 31)
+                                    reg[rc] = ((long)reg[ra]) <= (long)(rb == -1 ? lit : reg[rb]) ? 1LU : 0LU;
+                                return;
+                            case Op.Cmplt:
+                                if (rc != 31)
+                                    reg[rc] = ((long)reg[ra]) < (long)(rb == -1 ? lit : reg[rb]) ? 1LU : 0LU;
+                                return;
+                            case Op.Cmpule:
+                                if (rc != 31)
+                                    reg[rc] = reg[ra] <= (rb == -1 ? lit : reg[rb]) ? 1LU : 0LU;
+                                return;
+                            case Op.Cmpult:
+                                if (rc != 31)
+                                    reg[rc] = reg[ra] < (rb == -1 ? lit : reg[rb]) ? 1LU : 0LU;
                                 return;
                         }
                         break;

@@ -46,6 +46,12 @@ namespace Sirius
             throw Abort("不正なアドレス: {0:x16}", addr);
         }
 
+        public void WriteDouble(ulong addr, double v)
+        {
+            var mp = GetPtr(addr, 8);
+            Array.Copy(BitConverter.GetBytes(v), 0, mp.Buf, mp.Ptr, 8);
+        }
+
         public void Write64(ulong addr, ulong v)
         {
             var mp = GetPtr(addr, 8);
@@ -68,7 +74,10 @@ namespace Sirius
         {
             if (addr == 0x10000000)
             {
-                output.Append((char)v);
+                if (v == '\n')
+                    output.AppendLine();
+                else
+                    output.Append((char)v);
                 return;
             }
             var mp = GetPtr(addr, 8);
