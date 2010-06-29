@@ -12,7 +12,7 @@ int printstr(const char *s)
     return ret;
 }
 
-int printint(int v)
+int printint(long v)
 {
     char buf[16];
     char *p;
@@ -83,6 +83,10 @@ int printf(const char *format, ...)
                 printstr("0x");
                 ret += printhex(*(int *)(arg++), 16) + 2;
                 break;
+            case 'c':
+                printchar(*(char *)(arg++));
+                ret++;
+                break;
             case 's':
                 ret += printstr(*(const char **)(arg++));
                 break;
@@ -109,11 +113,13 @@ int printf(const char *format, ...)
 
 void entry()
 {
-    int a, b, c;
-    printf("%s, %s!\n", "Hello", "World");
+    int a, b, c, i, sum = 0;
+    printf("%s, %s%c\n", "Hello", "World", '!');
     a = 1;
     b = 2;
     c = a + b;
     printf("%d + %d = %d\n", a, b, c);
-    printf("&a: %p, &b: %p, &c: %p", &a, &b, &c);
+    printf("&a: %p, &b: %p, &c: %p\n", &a, &b, &c);
+    for (i = 1; i <= 10000; i++) sum += i;
+    printf("1 + 2 + ... + 9999 + 10000 = %d", sum);
 }
