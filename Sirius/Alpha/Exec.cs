@@ -138,8 +138,11 @@ namespace Sirius
                             case Op.Xor: reg[rc] = va ^ vb; return;
                             case Op.Ornot: reg[rc] = va | ~vb; return;
                             case Op.Eqv: reg[rc] = va ^ ~vb; return;
+                            case Op.Zap: reg[rc] = va & mask[vb & 255]; return;
+                            case Op.Zapnot: reg[rc] = va & ~mask[vb & 255]; return;
                             case Op.Addq: reg[rc] = va + vb; return;
                             case Op.Subq: reg[rc] = va - vb; return;
+                            case Op.Mulq: reg[rc] = (ulong)((long)va * (long)vb); return;
                             case Op.Umulh:
                                 if (va == 0 || vb == 0)
                                     reg[rc] = 0;
@@ -205,6 +208,7 @@ namespace Sirius
                         {
                             case Op.Addl: reg[rc] = (ulong)(int)(val + vbl); return;
                             case Op.Subl: reg[rc] = (ulong)(int)(val - vbl); return;
+                            case Op.Mull: reg[rc] = (ulong)((int)val * (int)vbl); return;
                             case Op.S4addl: reg[rc] = (ulong)(int)((val << 2) + vbl); return;
                             case Op.S8addl: reg[rc] = (ulong)(int)((val << 3) + vbl); return;
                             case Op.S4subl: reg[rc] = (ulong)(int)((val << 2) - vbl); return;

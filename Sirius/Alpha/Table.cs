@@ -70,10 +70,9 @@ namespace Sirius
 
             for (int i = 0; i < 256; i++)
             {
-                if ((i & 1) != 0) mask[i] |= 0x000000ffUL;
-                if ((i & 2) != 0) mask[i] |= 0x0000ff00UL;
-                if ((i & 4) != 0) mask[i] |= 0x00ff0000UL;
-                if ((i & 8) != 0) mask[i] |= 0xff000000UL;
+                ulong m = 0xff;
+                for (int j = 1; j < 256; j <<= 1, m <<= 8)
+                    if ((i & j) != 0) mask[i] |= m;
             }
 
             subops = new Op[0x40][];
