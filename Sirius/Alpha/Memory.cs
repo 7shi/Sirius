@@ -9,6 +9,7 @@ namespace Sirius
         private const ulong stackStart = 0x00f00000;
         private const ulong stackSize = 1024 * 1024; // 1MB
         private const ulong stackEnd = stackStart + stackSize;
+        private const ulong putcharAddress = 0x10000000;
 
         private byte[] stack = new byte[stackSize]; // 00f00000-01000000
 
@@ -54,58 +55,66 @@ namespace Sirius
 
         public void Write64(ulong addr, ulong v)
         {
+            if (addr == putcharAddress) { PutChar((byte)v); return; }
             var mp = GetPtr(addr, 8);
             Array.Copy(BitConverter.GetBytes(v), 0, mp.Buf, mp.Ptr, 8);
         }
 
         public void Write32(ulong addr, uint v)
         {
+            if (addr == putcharAddress) { PutChar((byte)v); return; }
             var mp = GetPtr(addr, 4);
             Array.Copy(BitConverter.GetBytes(v), 0, mp.Buf, mp.Ptr, 4);
         }
 
         public void Write16(ulong addr, ushort v)
         {
+            if (addr == putcharAddress) { PutChar((byte)v); return; }
             var mp = GetPtr(addr, 2);
             Array.Copy(BitConverter.GetBytes(v), 0, mp.Buf, mp.Ptr, 2);
         }
 
         public void Write8(ulong addr, byte v)
         {
-            if (addr == 0x10000000)
-            {
-                if (v == '\n')
-                    output.AppendLine();
-                else
-                    output.Append((char)v);
-                return;
-            }
+            if (addr == putcharAddress) { PutChar(v); return; }
             var mp = GetPtr(addr, 8);
             mp.Buf[mp.Ptr] = v;
         }
 
         public ulong Read64(ulong addr)
         {
+            if (addr == putcharAddress) return 0xffffffffffffffffUL;
             var mp = GetPtr(addr, 8);
             return BitConverter.ToUInt64(mp.Buf, mp.Ptr);
         }
 
         public uint Read32(ulong addr)
         {
+            if (addr == putcharAddress) return 0;
             var mp = GetPtr(addr, 4);
             return BitConverter.ToUInt32(mp.Buf, mp.Ptr);
         }
 
         public ushort Read16(ulong addr)
         {
+            if (addr == putcharAddress) return 0;
             var mp = GetPtr(addr, 2);
             return BitConverter.ToUInt16(mp.Buf, mp.Ptr);
         }
 
         public byte Read8(ulong addr)
         {
+            if (addr == putcharAddress) return 0;
             var mp = GetPtr(addr, 8);
             return mp.Buf[mp.Ptr];
+        }
+
+        public void PutChar(byte v)
+        {
+            if (v == '\n')
+                output.AppendLine();
+            else
+                output.Append((char)v);
         }
     }
 }

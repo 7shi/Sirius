@@ -61,11 +61,20 @@ namespace Sirius
 
         private static string[] regname = new string[32];
         private static Op[][] subops;
+        private static ulong[] mask = new ulong[256];
 
         static Alpha()
         {
             for (int i = 0; i < regname.Length; i++)
                 regname[i] = ((Regs)i).ToString().ToLower();
+
+            for (int i = 0; i < 256; i++)
+            {
+                if ((i & 1) != 0) mask[i] |= 0x000000ffUL;
+                if ((i & 2) != 0) mask[i] |= 0x0000ff00UL;
+                if ((i & 4) != 0) mask[i] |= 0x00ff0000UL;
+                if ((i & 8) != 0) mask[i] |= 0xff000000UL;
+            }
 
             subops = new Op[0x40][];
 
