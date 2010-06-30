@@ -130,6 +130,8 @@ namespace Sirius
                             : (code >> 13) & 0xff;
                         int rc = (int)(code & 31);
                         if (rc == 31) return;
+                        int m = ((int)vb & 7) << 3;
+                        uint val = (uint)va, vbl = (uint)vb;
                         switch (op)
                         {
                             case Op.Bis: reg[rc] = va | vb; return;
@@ -177,10 +179,7 @@ namespace Sirius
                             case Op.Cmovle: if ((long)va <= 0) reg[rc] = vb; return;
                             case Op.Cmovlt: if ((long)va < 0) reg[rc] = vb; return;
                             case Op.Cmovne: if (va != 0) reg[rc] = vb; return;
-                        }
-                        int m = ((int)vb & 7) << 3;
-                        switch (op)
-                        {
+
                             case Op.Mskbl: reg[rc] = va & ~(0xffUL << m); return;
                             case Op.Mskwl: reg[rc] = va & ~(0xffffUL << m); return;
                             case Op.Mskll: reg[rc] = va & ~(0xffffffffUL << m); return;
@@ -202,10 +201,7 @@ namespace Sirius
                             case Op.Extwh: reg[rc] = (va << (64 - m)) & 0xffff; return;
                             case Op.Extlh: reg[rc] = (va << (64 - m)) & 0xffffffff; return;
                             case Op.Extqh: reg[rc] = (va << (64 - m)); return;
-                        }
-                        uint val = (uint)va, vbl = (uint)vb;
-                        switch (op)
-                        {
+
                             case Op.Addl: reg[rc] = (ulong)(int)(val + vbl); return;
                             case Op.Subl: reg[rc] = (ulong)(int)(val - vbl); return;
                             case Op.Mull: reg[rc] = (ulong)((int)val * (int)vbl); return;
