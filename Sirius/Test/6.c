@@ -12,9 +12,9 @@ int printstr(const char *s)
     return ret;
 }
 
-int printint(long v)
+int printlong(long v)
 {
-    char buf[16];
+    char buf[32];
     char *p;
     int ret = 0;
     if (v == 0)
@@ -37,7 +37,7 @@ int printint(long v)
 
 int printhex(long v, int w)
 {
-    char buf[17];
+    char buf[32];
     char *p, *start;
     int ret = 0;
     if (v == 0)
@@ -74,7 +74,7 @@ int printf(const char *format, ...)
             switch (*(++p))
             {
             case 'd':
-                ret += printint(*(int *)(arg++));
+                ret += printlong(*(int *)(arg++));
                 break;
             case 'x':
                 ret += printhex(*(int *)(arg++), 0);
