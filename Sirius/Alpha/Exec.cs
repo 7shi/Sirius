@@ -101,8 +101,8 @@ namespace Sirius
                             case Op.Ldq: reg[ra] = Read64(vb + disp); return;
                             case Op.Ldq_u: reg[ra] = Read64((vb + disp) & ~7UL); return;
                             case Op.Ldl: reg[ra] = (ulong)(int)Read32(vb + disp); return;
-                            case Op.Ldwu: reg[ra] = (ulong)(short)Read16(vb + disp); return;
-                            case Op.Ldbu: reg[ra] = (ulong)(sbyte)Read8(vb + disp); return;
+                            case Op.Ldwu: reg[ra] = Read16(vb + disp); return;
+                            case Op.Ldbu: reg[ra] = Read8(vb + disp); return;
                         }
                         break;
                     }
@@ -140,8 +140,8 @@ namespace Sirius
                             case Op.Xor: reg[rc] = va ^ vb; return;
                             case Op.Ornot: reg[rc] = va | ~vb; return;
                             case Op.Eqv: reg[rc] = va ^ ~vb; return;
-                            case Op.Zap: reg[rc] = va & mask[vb & 255]; return;
-                            case Op.Zapnot: reg[rc] = va & ~mask[vb & 255]; return;
+                            case Op.Zap: reg[rc] = va & ~mask[vb & 255]; return;
+                            case Op.Zapnot: reg[rc] = va & mask[vb & 255]; return;
                             case Op.Addq: reg[rc] = va + vb; return;
                             case Op.Subq: reg[rc] = va - vb; return;
                             case Op.Mulq: reg[rc] = (ulong)((long)va * (long)vb); return;
