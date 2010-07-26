@@ -161,17 +161,14 @@ namespace Sirius
                         int rb = (int)((code >> 16) & 31);
                         int disp = (int)(code & 0xffff);
                         var args = disp < 0x8000
-                            ? string.Format("{0:x}({1})", disp, regname[rb])
-                            : string.Format("-{0:x}({1})", 0x10000 - disp, regname[rb]);
+                            ? string.Format("{0:x}", disp)
+                            : string.Format("-{0:x}", 0x10000 - disp);
+                        if (rb != 31) args += "(" + regname[rb] + ")";
                         sb.AppendFormat("     ", (code >> 14) & 3);
                         sb.AppendFormat(" r{0:00} r{1:00} {2:x4}", ra, rb, disp);
                         sb.AppendFormat(" => {0,-7} {1},", mne, regname[ra]);
                         sb.Append(args);
-                        if (rb == 31 && op == Op.Lda)
-                            sb.AppendFormat(" => mov {0:x},{1}", disp, regname[ra]);
-                        else if (rb == 31 && op == Op.Ldah)
-                            sb.AppendFormat(" => mov {0:x}0000,{1}", disp, regname[ra]);
-                        else if (ra == 31)
+                        if (ra == 31)
                         {
                             if (disp == 0 && op == Op.Ldq_u)
                                 sb.Append(" => unop");
